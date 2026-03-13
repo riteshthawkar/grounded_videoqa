@@ -1,0 +1,23 @@
+{
+  "input_path": "outputs/dry_run/candidates/tvqa_train.visual_features.jsonl",
+  "num_examples": 2,
+  "answerer": "linear",
+  "policy": "linear",
+  "policy_model_dir": "outputs/dry_run/models/policy_hybrid_linear",
+  "retriever": "hybrid_clip",
+  "visual_model_name": "openai/clip-vit-base-patch32",
+  "allocation": {
+    "subtitle": 1,
+    "frame": 1,
+    "segment": 1
+  },
+  "max_items": 3,
+  "metrics": {
+    "accuracy": 1.0,
+    "selected_evidence_cost": 1.5,
+    "selected_evidence_count": 1.0,
+    "sufficiency": 0.9734237015178031,
+    "comprehensiveness": 0.006884385044558766,
+    "selected_temporal_iou": 0.5
+  }
+}

@@ -1,0 +1,17 @@
+numpy>=1.26
+PyYAML>=6.0
+
+[dev]
+pytest>=8.0
+
+[train]
+torch>=2.2
+transformers>=4.40
+faiss-cpu>=1.8
+decord>=0.6
+scikit-learn>=1.5
+
+[vision]
+torch>=2.2
+transformers>=4.40
+Pillow>=10.0

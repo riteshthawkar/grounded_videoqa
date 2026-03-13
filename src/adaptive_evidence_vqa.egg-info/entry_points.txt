@@ -1,0 +1,2 @@
+[console_scripts]
+adaptive-evidence-vqa = adaptive_evidence_vqa.cli:main

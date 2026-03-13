@@ -1,0 +1,67 @@
+{
+  "input_path": "outputs/dry_run/candidates/tvqa_train.visual_features.jsonl",
+  "num_examples": 1,
+  "answerers": {
+    "answerer_a": {
+      "label": "linear",
+      "name": "linear",
+      "model_dir": "outputs/dry_run/models/answerer_hybrid_linear",
+      "model_name": null,
+      "device": null
+    },
+    "answerer_b": {
+      "label": "frozen_multimodal",
+      "name": "frozen_multimodal",
+      "model_dir": null,
+      "model_name": "openai/clip-vit-base-patch32",
+      "device": "cpu"
+    }
+  },
+  "retriever": "hybrid_clip",
+  "visual_model_name": "openai/clip-vit-base-patch32",
+  "allocation": {
+    "subtitle": 2,
+    "frame": 2,
+    "segment": 2
+  },
+  "oracle_config": {
+    "mode": "correctness_plus_sufficiency_plus_grounding",
+    "min_sufficiency": 0.8,
+    "min_temporal_iou": 0.1,
+    "require_gold_answer": true
+  },
+  "metrics": {
+    "answerer_a": {
+      "oracle_valid_rate": 1.0,
+      "own_subset_accuracy": 1.0,
+      "cross_subset_accuracy": 1.0,
+      "own_subset_count": 2.0,
+      "own_subset_cost": 2.5,
+      "own_subset_sufficiency": 1.0,
+      "cross_subset_sufficiency": 1.0,
+      "transfer_sufficiency_gap": 0.0,
+      "transfer_accuracy_gap": 0.0,
+      "own_subset_temporal_iou": 0.5
+    },
+    "answerer_b": {
+      "oracle_valid_rate": 1.0,
+      "own_subset_accuracy": 1.0,
+      "cross_subset_accuracy": 1.0,
+      "own_subset_count": 1.0,
+      "own_subset_cost": 1.0,
+      "own_subset_sufficiency": 0.9896222718681473,
+      "cross_subset_sufficiency": 0.948211652798489,
+      "transfer_sufficiency_gap": 0.04141061906965837,
+      "transfer_accuracy_gap": 0.0,
+      "own_subset_temporal_iou": 0.5
+    },
+    "pair": {
+      "evidence_jaccard": 0.0,
+      "modality_agreement": 0.0,
+      "temporal_agreement": 1.0,
+      "subset_count_gap": 1.0,
+      "subset_cost_gap": 1.5,
+      "both_oracle_valid_rate": 1.0
+    }
+  }
+}

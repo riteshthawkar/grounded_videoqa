@@ -1,0 +1,29 @@
+{
+  "input_path": "outputs/dry_run/candidates/tvqa_train.visual_features.jsonl",
+  "num_examples": 2,
+  "answerer": "lexical",
+  "retriever": "hybrid_clip",
+  "visual_model_name": "openai/clip-vit-base-patch32",
+  "allocation": {
+    "subtitle": 1,
+    "frame": 1,
+    "segment": 1
+  },
+  "oracle_config": {
+    "min_sufficiency": 0.0,
+    "min_temporal_iou": 0.0,
+    "require_gold_answer": true
+  },
+  "metrics": {
+    "accuracy": 1.0,
+    "selected_evidence_cost": 3.5,
+    "oracle_subset_cost": 0.75,
+    "selected_evidence_count": 3.0,
+    "oracle_valid_rate": 1.0,
+    "oracle_subset_count": 0.5,
+    "sufficiency": 0.9824636779302364,
+    "comprehensiveness": 0.061295607852388787,
+    "selected_temporal_iou": 0.5,
+    "oracle_temporal_iou": 0.25
+  }
+}

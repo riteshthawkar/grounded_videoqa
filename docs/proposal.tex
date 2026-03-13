@@ -1,0 +1,172 @@
+\documentclass{article}
+\usepackage[final]{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{amsmath}
+
+% --- Tighten spacing (NeurIPS-safe) ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*,itemsep=0pt,topsep=0pt,parsep=0pt,partopsep=0pt}
+\setlength{\parskip}{0pt}
+\setlength{\abovedisplayskip}{2pt}
+\setlength{\belowdisplayskip}{2pt}
+\setlength{\textfloatsep}{4pt}
+\setlength{\intextsep}{4pt}
+\renewcommand{\baselinestretch}{0.97} % small squeeze; remove if disallowed
+
+\title{Tri-Modal RAG VideoQA with Modality Routing}
+
+\author{
+  Aniket Salunke, Ketan More, Nazish Baliyan, Ritesh Thawkar \\
+  Mohamed Bin Zayed University of Artificial Intelligence \\
+  \texttt{\{aniket.salunke,ketan.more,nazish.baliyan,ritesh.thawkar\}@mbzuai.ac.ae}
+}
+
+\begin{document}
+\maketitle
+\vspace{-20pt}
+
+\begin{abstract}\vspace{-2pt}
+VideoQA evidence is distributed across subtitles, frames, and temporal segments, yet full-video processing remains prohibitively costly for real-world applications such as educational video search, media analysis, and accessible video assistants operating under strict latency and context constraints.
+We propose a tri-modal retrieval-augmented pipeline with a modality router that dynamically allocates a fixed evidence budget across modalities per question, aiming to improve accuracy and reduce evidence mismatch compared to fixed retrieval policies.\vspace{-6pt}
+\end{abstract}
+
+\vspace{-4pt}
+\paragraph{Problem statement.}
+Given a video clip $V$ with aligned subtitles $S$ and a multiple-choice question $q$ with options $\{a_i\}_{i=1}^5$, predict the correct answer $\hat{a}$ using only a constrained evidence budget $B$.
+A key challenge is \emph{modality dependence}: dialogue-heavy questions need subtitle evidence, appearance/object questions need frames, and action questions need temporal segments.
+\textbf{Hypothesis:} routing the evidence budget across modalities based on the question improves end-to-end VideoQA compared to single-modality or fixed-budget retrieval.
+
+\vspace{-2pt}
+\paragraph{Related work.}
+TVQA~\cite{lei2018tvqa} introduced multimodal VideoQA with aligned subtitles, establishing the benchmark we build on, while CLIP~\cite{radford2021clip} and VideoCLIP~\cite{xu2021videoclip} provide strong cross-modal encoders for frame- and segment-level retrieval.
+Retrieval-augmented generation (RAG)~\cite{lewis2020rag} has been extended to video: Video-RAG~\cite{luo2024videorag} retrieves visually-aligned evidence for long videos, VRAG~\cite{gia2025vrag} targets long-form VideoQA, Sagare et al.~\cite{sagare2024videorag} scale context size, and Jeong et al.~\cite{jeong2025videorag} retrieve over full video corpora; yet UniversalRAG~\cite{yeo2025universalrag} highlights persistent modality gaps in unified-space retrieval.
+None of these works dynamically \emph{route} a fixed evidence budget across modalities conditioned on the question type---the gap our project addresses.
+
+\vspace{-2pt}
+\paragraph{Dataset \& evaluation.}
+\textbf{TVQA} (primary)~\cite{lei2018tvqa}: video + subtitles + (question, 5 answers).
+We output $(\hat{a},E)$ where $E$ contains cited subtitle spans and timestamps plus selected keyframes/segments.
+\textbf{Metrics:} QA accuracy; retrieval quality (Recall@$K$/MRR over evidence items, and temporal overlap w.r.t.\ annotated moments when available); evidence efficiency (items/tokens per query); and calibration/robustness checks (e.g., accuracy vs.\ budget $B$ and perturbed/noisy subtitles).
+
+\vspace{-2pt}
+\paragraph{Methodology.}
+We build three evidence stores: (1) subtitle chunks (timestamped), (2) keyframes, and (3) short segments (2--4s windows).
+We embed each store with pretrained encoders (text; image-language such as CLIP~\cite{radford2021clip}; video-text representations~\cite{xu2021videoclip,luo2021clip4clip}) and retrieve top-$K_m$ items per modality using dense retrieval~\cite{karpukhin2020dpr} with ANN indexing~\cite{johnson2017faiss}.
+Our contribution is a \textbf{modality router} that predicts $(K_{\text{text}},K_{\text{img}},K_{\text{vid}})$ under total budget $B$, and retrieves accordingly from modality-specific indexes (avoiding unified-space modality gaps in multimodal RAG~\cite{yeo2025universalrag}).
+Router training will follow: (A) supervision from question patterns/keywords (dialogue vs visual vs action), and/or (B) imitation of the best split found on a validation set.
+Answer scoring uses evidence-conditioned features for each option (e.g., max/mean similarity to retrieved evidence per modality) and an MLP classifier to select $\hat{a}$ while returning top evidence as citations.
+
+\vspace{-2pt}
+\paragraph{Baselines.}
+(i) \textbf{No-RAG}: answer using fixed context (uniform keyframes/segments + truncated subtitles), without any learned retrieval;
+(ii) \textbf{Single-modality RAG}: retrieve from only one modality (text-only / frame-only / segment-only) under the same total budget $B$ to isolate modality contributions;
+(iii) \textbf{Fixed tri-modal RAG}: retrieve from all modalities with a constant split of $B$ (uniform $(K_{\text{text}},K_{\text{img}},K_{\text{vid}})$), then score options using the same answer module as our method.
+
+\vspace{-2pt}
+\paragraph{Ablations.}
+(a) \textbf{Routing}: router off vs on; keyword-supervised vs validation-imitation training; sensitivity to routing errors (forced wrong split);
+(b) \textbf{Budget \& granularity}: sweep $B$; segment window (2s/4s) and frame rate; subtitle chunk size; compare uniform vs scene-change keyframes;
+(c) \textbf{Ranking/scoring}: rerank on/off; similarity-only scoring vs MLP option scorer; encoder choice per modality and late-fusion strategies.
+\textbf{Analysis:} per-question-type breakdown, evidence-mismatch audit (retrieval failure vs reasoning/scoring failure), and accuracy--compute trade-offs (latency vs accuracy and evidence budget vs accuracy).
+
+
+\vspace{-2pt}
+\paragraph{Work division.}
+Work will be split by components with shared integration: a designated member leads preprocessing; another leads embedding/indexing + retrieval baselines; another leads router training + ablations; another leads option scoring + evaluation/demo. All members jointly define protocols, review results, and write the report/presentation.
+
+\vspace{-2pt}
+\paragraph{Software \& compute.}
+Deliverables: reproducible preprocessing, indexing/retrieval, router, scorer, evaluation, and a demo script (question $\rightarrow$ answer + cited evidence) in a private GitHub repo.
+Stack: PyTorch (ROCm), HuggingFace, OpenCLIP/CLIP, FAISS, decord/PyAV, NumPy/scikit-learn.
+Compute: 1 GPU baseline; up to 8 AMD GPUs for parallel feature extraction and sweeps.
+
+\vspace{-2pt}
+\paragraph{Papers to read.}
+\begin{itemize}
+  \item \textbf{TVQA: Localized, Compositional Video Question Answering}~\cite{lei2018tvqa}: defines the dataset, task format, and evaluation protocol adopted in this project.
+  \item \textbf{Video-RAG: Visually-Aligned Retrieval-Augmented Long Video Comprehension}~\cite{luo2024videorag}: the closest prior work on retrieval-augmented video understanding, which informs our indexing and retrieval design.
+  \item \textbf{Learning Transferable Visual Models From Natural Language Supervision (CLIP)}~\cite{radford2021clip}: provides the backbone encoder for frame-level dense features central to our embedding pipeline.
+  \item \textbf{UniversalRAG: Retrieval-Augmented Generation Over Multiple Corpora With Diverse Modalities and Granularities}~\cite{yeo2025universalrag}: exposes modality gaps in unified-space multimodal RAG, motivating our design of separate per-modality indexes.
+  \item \textbf{Smart Routing for Multimodal Video Retrieval: When to Search What (ModaRoute)}~\cite{delarosa2025modaroute}: introduces LLM-based modality routing for video retrieval, directly related to our question-conditioned routing mechanism.
+\end{itemize}
+
+% References can go beyond one page.
+\begin{thebibliography}{99}\setlength{\itemsep}{0pt}
+
+\bibitem{lei2018tvqa}
+J.~Lei, L.~Yu, T.~Bansal, and T.~Berg.
+\newblock TVQA: Localized, compositional video question answering.
+\newblock In \emph{Proceedings of EMNLP}, 2018.
+
+\bibitem{radford2021clip}
+A.~Radford, J.~W. Kim, C.~Hallacy, A.~Ramesh, G.~Goh, S.~Agarwal, G.~Sastry,
+A.~Askell, P.~Mishkin, J.~Clark, G.~Krueger, and I.~Sutskever.
+\newblock Learning transferable visual models from natural language supervision.
+\newblock In \emph{Proceedings of ICML}, 2021.
+
+\bibitem{xu2021videoclip}
+H.~Xu, G.~Ghosh, P.-Y. Huang, D.~Okhonko, A.~Aghajanyan, F.~Metze,
+L.~Zettlemoyer, and C.~Feichtenhofer.
+\newblock VideoCLIP: Contrastive pre-training for zero-shot video-text understanding.
+\newblock In \emph{Proceedings of EMNLP}, 2021.
+
+\bibitem{luo2021clip4clip}
+H.~Luo, L.~Ji, B.~Shi, H.~Huang, N.~Duan, T.~Li, X.~Chen, and M.~Zhou.
+\newblock CLIP4Clip: An empirical study of CLIP for end-to-end video clip retrieval.
+\newblock arXiv:2104.08860, 2021.
+
+\bibitem{lewis2020rag}
+P.~Lewis, E.~Perez, A.~Piktus, F.~Petroni, V.~Karpukhin, N.~Goyal, H.~K{\"u}ttler,
+M.~Lewis, W.-t. Yih, T.~Rockt{\"a}schel, S.~Riedel, and D.~Kiela.
+\newblock Retrieval-augmented generation for knowledge-intensive NLP tasks.
+\newblock In \emph{Proceedings of NeurIPS}, 2020.
+
+\bibitem{karpukhin2020dpr}
+V.~Karpukhin, B.~O{\u{g}}uz, S.~Min, P.~Lewis, L.~Wu, S.~Edunov, D.~Chen, and W.-t. Yih.
+\newblock Dense passage retrieval for open-domain question answering.
+\newblock In \emph{Proceedings of EMNLP}, 2020.
+
+\bibitem{johnson2017faiss}
+J.~Johnson, M.~Douze, and H.~J{\'e}gou.
+\newblock Billion-scale similarity search with GPUs.
+\newblock arXiv:1702.08734, 2017.
+
+\bibitem{luo2024videorag}
+Y.~Luo, X.~Zheng, G.~Li, S.~Yin, H.~Lin, C.~Fu, J.~Huang, J.~Ji, F.~Chao, J.~Luo, and R.~Ji.
+\newblock Video-RAG: Visually-aligned retrieval-augmented long video comprehension.
+\newblock arXiv:2411.13093, 2024. (Accepted at NeurIPS 2025)
+
+\bibitem{gia2025vrag}
+B.~T. Gia, K.~Le, T.~Do, T.-D. Mai, T.~D. Ngo, D.-D. Le, and S.~Satoh.
+\newblock VRAG: Retrieval-augmented video question answering for long-form videos.
+\newblock In \emph{CVPR Workshops (IViSE)}, 2025.
+
+\bibitem{sagare2024videorag}
+S.~R. Sagare, P.~Ullegaddi, N.~K.~S., N.~R., K.~Sarabhai, and R.~K.~S.~A.
+\newblock VideoRAG: Scaling the context size and relevance for video question-answering.
+\newblock In \emph{Proceedings of INLG (System Demonstrations)}, 2024.
+
+\bibitem{jeong2025videorag}
+S.~Jeong, K.~Kim, J.~Baek, and S.~J. Hwang.
+\newblock VideoRAG: Retrieval-augmented generation over video corpus.
+\newblock In \emph{Findings of ACL}, 2025.
+
+\bibitem{yeo2025universalrag}
+W.~Yeo, K.~Kim, S.~Jeong, J.~Baek, and S.~J. Hwang.
+\newblock UniversalRAG: Retrieval-augmented generation over multiple corpora with diverse modalities and granularities.
+\newblock arXiv:2504.20734, 2025.
+
+\bibitem{delarosa2025modaroute}
+K.~Dela~Rosa.
+\newblock Smart routing for multimodal video retrieval: When to search what.
+\newblock In \emph{ICCV Workshops (Multimodal Representation and Retrieval)}, 2025.
+
+\end{thebibliography}
+
+\end{document}

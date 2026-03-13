@@ -1,0 +1,234 @@
+Metadata-Version: 2.4
+Name: adaptive-evidence-vqa
+Version: 0.1.0
+Summary: Research codebase for adaptive minimal evidence acquisition in grounded VideoQA.
+Author: Ritesh Thawkar
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: PyYAML>=6.0
+Provides-Extra: vision
+Requires-Dist: torch>=2.2; extra == "vision"
+Requires-Dist: transformers>=4.40; extra == "vision"
+Requires-Dist: Pillow>=10.0; extra == "vision"
+Provides-Extra: train
+Requires-Dist: torch>=2.2; extra == "train"
+Requires-Dist: transformers>=4.40; extra == "train"
+Requires-Dist: faiss-cpu>=1.8; extra == "train"
+Requires-Dist: decord>=0.6; extra == "train"
+Requires-Dist: scikit-learn>=1.5; extra == "train"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+
+# Adaptive Minimal Evidence Acquisition for Grounded VideoQA
+
+This repository is the working codebase for the project on adaptive evidence acquisition and minimal sufficient evidence for grounded VideoQA.
+
+The repository is intentionally built as a fresh research codebase instead of forking one older paper repo wholesale. That is the right tradeoff for this project:
+
+- the official TVQA repository is useful as a data and evaluation reference, but it is tightly coupled to its original modeling stack;
+- the TVQA+ / STAGE code is useful for grounding supervision and annotations, but it uses an older environment and is not a good base for new retrieval-policy work;
+- FrozenBiLM is the cleanest modern baseline reference for VideoQA training structure, but its modeling assumptions are still different from sequential evidence acquisition.
+
+The plan is to use those projects as references and, where appropriate, port only the parts we need:
+
+- dataset adapters and preprocessing conventions from TVQA / TVQA+;
+- evaluation logic for localized or grounded VideoQA where available;
+- training and experiment organization inspired by more modern baseline code.
+
+## Research Objective
+
+The method we are building is:
+
+1. construct a multimodal evidence pool from subtitles, frames, and temporal segments;
+2. score answer options with evidence-conditioned features;
+3. approximate minimal sufficient evidence subsets offline;
+4. learn a sequential acquisition policy that chooses which evidence to acquire next and when to stop.
+
+The main scientific target is the tradeoff between:
+
+- answer accuracy,
+- evidence faithfulness,
+- evidence compactness,
+- acquisition cost.
+
+## Repository Layout
+
+```text
+configs/                    Experiment configuration templates
+docs/                       Proposal, report, and course material
+scripts/                    Entry-point scripts for preprocessing and training
+src/adaptive_evidence_vqa/  Python package
+tests/                      Unit tests for core logic
+```
+
+Within the package:
+
+```text
+data/       Dataset schemas and adapters
+retrieval/  Evidence pool construction and candidate retrieval interfaces
+models/     Answerer, oracle, and acquisition policy modules
+eval/       Accuracy, grounding, and sufficiency metrics
+```
+
+The first concrete dataset support is now wired for:
+
+- raw `TVQA` question JSONL + subtitle JSONL;
+- raw `TVQA+` question JSON + subtitle JSON.
+
+Both are normalized into a common JSONL schema before training.
+After normalization, a separate candidate-pool stage generates subtitle chunks, segment windows,
+and frame timestamps for retrieval and oracle construction.
+
+## Quick Start
+
+Use the project Conda environment instead of the global interpreter:
+
+```bash
+conda env create -f environment.yml
+conda activate adaptive-evidence-vqa
+```
+
+If the environment already exists, update it in place:
+
+```bash
+conda env update -f environment.yml --prune
+conda activate adaptive-evidence-vqa
+```
+
+Run the toy pipeline:
+
+```bash
+python -m adaptive_evidence_vqa toy-run
+```
+
+Print the default configuration:
+
+```bash
+python -m adaptive_evidence_vqa print-config
+```
+
+Normalize raw TVQA annotations:
+
+```bash
+python scripts/prepare_tvqa.py \
+  --qa-path /path/to/tvqa_train.jsonl \
+  --subtitles-path /path/to/tvqa_preprocessed_subtitles.jsonl \
+  --output-path data/normalized/tvqa_train.jsonl
+```
+
+Normalize raw TVQA+ annotations:
+
+```bash
+python scripts/prepare_tvqa_plus.py \
+  --qa-path /path/to/tvqa_plus_train_preprocessed.json \
+  --subtitles-path /path/to/tvqa_plus_subtitles.json \
+  --output-path data/normalized/tvqa_plus_train.jsonl
+```
+
+Build a candidate pool from normalized examples:
+
+```bash
+python scripts/build_candidate_pool.py \
+  --input-path data/normalized/tvqa_train.jsonl \
+  --output-path data/candidates/tvqa_train_candidates.jsonl
+```
+
+Materialize real frame artifacts and optional segment clips from source videos:
+
+```bash
+python scripts/materialize_visual_evidence.py \
+  --input-path data/candidates/tvqa_train_candidates.jsonl \
+  --video-root /path/to/tvqa_videos \
+  --output-path data/candidates/tvqa_train_visual.jsonl \
+  --frames-dir data/artifacts/frames \
+  --segments-dir data/artifacts/segments \
+  --extract-segments
+```
+
+Extract CLIP features for materialized frame and segment evidence:
+
+```bash
+python scripts/extract_clip_features.py \
+  --input-path data/candidates/tvqa_train_visual.jsonl \
+  --output-path data/candidates/tvqa_train_visual_features.jsonl \
+  --feature-dir data/features/clip
+```
+
+Run a fixed-allocation baseline on candidate pools:
+
+```bash
+python scripts/run_fixed_budget_baseline.py \
+  --input-path data/candidates/tvqa_train_candidates.jsonl \
+  --summary-output outputs/fixed_budget_summary.json \
+  --predictions-output outputs/fixed_budget_predictions.jsonl \
+  --answerer lexical \
+  --retriever bm25 \
+  --subtitle-k 2 \
+  --frame-k 2 \
+  --segment-k 2
+```
+
+Train the fixed-budget linear answerer baseline:
+
+```bash
+python scripts/train_answerer.py \
+  --train-path data/candidates/tvqa_train_candidates.jsonl \
+  --validation-path data/candidates/tvqa_val_candidates.jsonl \
+  --model-dir outputs/answerer_linear_bm25 \
+  --retriever bm25 \
+  --subtitle-k 2 \
+  --frame-k 2 \
+  --segment-k 2
+```
+
+Evaluate the trained answerer with the same baseline runner:
+
+```bash
+python scripts/run_fixed_budget_baseline.py \
+  --input-path data/candidates/tvqa_val_candidates.jsonl \
+  --summary-output outputs/fixed_budget_linear_summary.json \
+  --answerer linear \
+  --answerer-model-dir outputs/answerer_linear_bm25 \
+  --retriever bm25 \
+  --subtitle-k 2 \
+  --frame-k 2 \
+  --segment-k 2
+```
+
+Export oracle acquisition traces from a retrieved seed set:
+
+```bash
+python scripts/export_oracle_traces.py \
+  --input-path data/candidates/tvqa_train_candidates.jsonl \
+  --output-path outputs/oracle_traces.jsonl \
+  --answerer linear \
+  --answerer-model-dir outputs/answerer_linear_bm25 \
+  --retriever bm25 \
+  --subtitle-k 2 \
+  --frame-k 2 \
+  --segment-k 2
+```
+
+Run the test suite from the Conda environment:
+
+```bash
+pytest
+```
+
+## External References
+
+These are references, not vendored dependencies:
+
+- TVQA official repository: <https://github.com/jayleicn/TVQA>
+- TVQA+ / STAGE official repository: <https://github.com/jayleicn/TVQAplus>
+- FrozenBiLM VideoQA repository: <https://github.com/antoyang/FrozenBiLM>
+
+## Immediate Next Implementation Steps
+
+1. add real TVQA / TVQA+ dataset readers and preprocessing scripts;
+2. replace the sparse BM25 baseline with pretrained text, image, and video encoders;
+3. switch retrieval to use real visual features for frames and segments;
+4. strengthen the answerer from hashed linear features to learned multimodal encoders;
+5. regenerate oracle traces with the stronger answerer and retrieved pools;
+6. train the sequential acquisition policy and stopping rule.

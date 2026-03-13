@@ -1,0 +1,169 @@
+\begin{thebibliography}{19}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Amoroso et~al.(2024)Amoroso, Zhang, Koner, Baraldi, Cucchiara, and
+  Tresp]{amoroso2024pqr}
+Roberto Amoroso, Gengyuan Zhang, Rajat Koner, Lorenzo Baraldi, Rita Cucchiara,
+  and Volker Tresp.
+\newblock Perceive, query \& reason: Enhancing video {QA} with question-guided
+  temporal queries.
+\newblock \emph{arXiv preprint arXiv:2412.19304}, 2024.
+\newblock URL \url{https://arxiv.org/abs/2412.19304}.
+
+\bibitem[Dela~Rosa(2025)]{delarosa2025modaroute}
+Kevin Dela~Rosa.
+\newblock Smart routing for multimodal video retrieval: When to search what.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision Workshops}, 2025.
+\newblock URL
+  \url{https://openaccess.thecvf.com/content/ICCV2025W/MRR%202025/papers/Dela_Rosa_Smart_Routing_for_Multimodal_Video_Retrieval_When_to_Search_What_ICCVW_2025_paper.pdf}.
+
+\bibitem[Gia et~al.(2025)Gia, Le, Do, Mai, Ngo, Le, and Satoh]{gia2025vrag}
+Bao~T. Gia, Khoa Le, Tuan Do, T.-D. Mai, Tuan~D. Ngo, D.-D. Le, and Shin'ichi
+  Satoh.
+\newblock {VRAG}: Retrieval-augmented video question answering for long-form
+  videos.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition Workshops}, 2025.
+\newblock URL
+  \url{https://openaccess.thecvf.com/content/CVPR2025W/IViSE/html/Gia_VRAG_Retrieval-Augmented_Video_Question_Answering_for_Long-Form_Videos_CVPRW_2025_paper.html}.
+
+\bibitem[Jang et~al.(2017)Jang, Song, Yu, Kim, and Kim]{jang2017tgifqa}
+Yoonho Jang, Yongrae Song, Youngjae Yu, Younghoon Kim, and Gunhee Kim.
+\newblock {TGIF-QA}: Toward spatio-temporal reasoning in visual question
+  answering.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}, 2017.
+\newblock URL \url{https://arxiv.org/abs/1704.04497}.
+
+\bibitem[Jeong et~al.(2025)Jeong, Kim, Baek, and Hwang]{jeong2025videorag}
+Seonghwan Jeong, Kyungmin Kim, Jinheon Baek, and Sung~Ju Hwang.
+\newblock Videorag: Retrieval-augmented generation over video corpus.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  ACL 2025}, 2025.
+\newblock URL \url{https://aclanthology.org/2025.findings-acl.1096/}.
+
+\bibitem[Le et~al.(2020)]{le2020hcrn}
+Thao~Minh Le et~al.
+\newblock Hierarchical conditional relation networks for video question
+  answering.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 2020.
+\newblock URL
+  \url{https://openaccess.thecvf.com/content_CVPR_2020/papers/Le_Hierarchical_Conditional_Relation_Networks_for_Video_Question_Answering_CVPR_2020_paper.pdf}.
+
+\bibitem[Lei et~al.(2018)Lei, Yu, Bansal, and Berg]{lei2018tvqa}
+Jie Lei, Licheng Yu, Mohit Bansal, and Tamara~L. Berg.
+\newblock {TVQA}: Localized, compositional video question answering.
+\newblock In \emph{Proceedings of the 2018 Conference on Empirical Methods in
+  Natural Language Processing}, 2018.
+\newblock URL \url{https://aclanthology.org/D18-1167/}.
+
+\bibitem[Lei et~al.(2020)Lei, Yu, Berg, and Bansal]{lei2019tvqaplus}
+Jie Lei, Licheng Yu, Tamara~L. Berg, and Mohit Bansal.
+\newblock {TVQA+}: Spatio-temporal grounding for video question answering.
+\newblock In \emph{Proceedings of the Annual Meeting of the Association for
+  Computational Linguistics}, 2020.
+\newblock URL \url{https://arxiv.org/abs/1904.11574}.
+
+\bibitem[Luo et~al.(2021)Luo, Ji, Shi, Huang, Duan, Li, Chen, and
+  Zhou]{luo2021clip4clip}
+Huaishao Luo, Lei Ji, Botian Shi, Haoyang Huang, Nan Duan, Tianrui Li, Xilin
+  Chen, and Ming Zhou.
+\newblock {CLIP4Clip}: An empirical study of {CLIP} for end-to-end video clip
+  retrieval.
+\newblock \emph{arXiv preprint arXiv:2104.08860}, 2021.
+\newblock URL \url{https://arxiv.org/abs/2104.08860}.
+
+\bibitem[Luo et~al.(2024)Luo, Zheng, Li, Yin, Lin, Fu, Huang, Ji, Chao, Luo,
+  and Ji]{luo2024videorag}
+Yihong Luo, Xiaojun Zheng, Guibin Li, Shixiang Yin, Hao Lin, Chunle Fu, Jiaxuan
+  Huang, Jiawei Ji, Feilong Chao, Jiebo Luo, and Rongrong Ji.
+\newblock Video-rag: Visually-aligned retrieval-augmented long video
+  comprehension.
+\newblock \emph{arXiv preprint arXiv:2411.13093}, 2024.
+\newblock URL \url{https://arxiv.org/abs/2411.13093}.
+
+\bibitem[Pan et~al.(2023)Pan, Lin, Ge, Zhu, Zhang, Wang, Qiao, and
+  Li]{pan2023r2a}
+Junting Pan, Ziyi Lin, Yuying Ge, Xiatian Zhu, Renrui Zhang, Yi~Wang, Yu~Qiao,
+  and Hongsheng Li.
+\newblock Retrieving-to-answer: Zero-shot video question answering with frozen
+  large language models.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision Workshops}, 2023.
+\newblock URL \url{https://arxiv.org/abs/2306.11732}.
+
+\bibitem[Radford et~al.(2021)Radford, Kim, Hallacy, Ramesh, Goh, Agarwal,
+  Sastry, Askell, Mishkin, Clark, Krueger, and Sutskever]{radford2021clip}
+Alec Radford, Jong~Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh,
+  Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark,
+  Gretchen Krueger, and Ilya Sutskever.
+\newblock Learning transferable visual models from natural language
+  supervision.
+\newblock In \emph{Proceedings of the International Conference on Machine
+  Learning}, 2021.
+\newblock URL \url{https://arxiv.org/abs/2103.00020}.
+
+\bibitem[Tapaswi et~al.(2016)Tapaswi, Zhu, Stiefelhagen, Torralba, Urtasun, and
+  Fidler]{tapaswi2016movieqa}
+Makarand Tapaswi, Yukun Zhu, Rainer Stiefelhagen, Antonio Torralba, Raquel
+  Urtasun, and Sanja Fidler.
+\newblock Movieqa: Understanding stories in movies through question-answering.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}, 2016.
+\newblock URL \url{https://arxiv.org/abs/1512.02902}.
+
+\bibitem[Xiao et~al.(2021)Xiao, Shang, Yao, and Chua]{xiao2021nextqa}
+Junbin Xiao, Xindi Shang, Angela Yao, and Tat-Seng Chua.
+\newblock {NExT-QA}: Next phase of question-answering to explaining temporal
+  actions.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}, 2021.
+\newblock URL \url{https://arxiv.org/abs/2105.08276}.
+
+\bibitem[Xiao et~al.(2023)Xiao, Yao, Li, and Chua]{xiao2023trust}
+Junbin Xiao, Angela Yao, Yicong Li, and Tat-Seng Chua.
+\newblock Can i trust your answer? visually grounded video question answering.
+\newblock \emph{arXiv preprint arXiv:2309.01327}, 2023.
+\newblock URL \url{https://arxiv.org/abs/2309.01327}.
+
+\bibitem[Xu et~al.(2021)Xu, Ghosh, Huang, Okhonko, Aghajanyan, Metze,
+  Zettlemoyer, and Feichtenhofer]{xu2021videoclip}
+Hu~Xu, Gargi Ghosh, Po-Yao Huang, Dmytro Okhonko, Armen Aghajanyan, Florian
+  Metze, Luke Zettlemoyer, and Christoph Feichtenhofer.
+\newblock {VideoCLIP}: Contrastive pre-training for zero-shot video-text
+  understanding.
+\newblock In \emph{Proceedings of the 2021 Conference on Empirical Methods in
+  Natural Language Processing}, 2021.
+\newblock URL \url{https://arxiv.org/abs/2109.14084}.
+
+\bibitem[Yang et~al.(2021)Yang, Miech, Sivic, Laptev, and
+  Schmid]{yang2021justask}
+Antoine Yang, Antoine Miech, Josef Sivic, Ivan Laptev, and Cordelia Schmid.
+\newblock Just ask: Learning to answer questions from millions of narrated
+  videos.
+\newblock \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision}, 2021.
+\newblock URL \url{https://arxiv.org/abs/2012.00451}.
+
+\bibitem[Yang et~al.(2022)Yang, Miech, Sivic, Laptev, and
+  Schmid]{yang2022frozenbilm}
+Antoine Yang, Antoine Miech, Josef Sivic, Ivan Laptev, and Cordelia Schmid.
+\newblock Zero-shot video question answering via frozen bidirectional language
+  models.
+\newblock \emph{Advances in Neural Information Processing Systems}, 2022.
+\newblock URL \url{https://arxiv.org/abs/2206.08155}.
+
+\bibitem[Yeo et~al.(2025)Yeo, Kim, Jeong, Baek, and Hwang]{yeo2025universalrag}
+Wonjin Yeo, Kyungmin Kim, Seonghwan Jeong, Jinheon Baek, and Sung~Ju Hwang.
+\newblock Universalrag: Retrieval-augmented generation over multiple corpora
+  with diverse modalities and granularities.
+\newblock \emph{arXiv preprint arXiv:2504.20734}, 2025.
+\newblock URL \url{https://arxiv.org/abs/2504.20734}.
+
+\end{thebibliography}

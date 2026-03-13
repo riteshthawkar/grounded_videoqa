@@ -1,0 +1,220 @@
+\documentclass{article}
+% Use preprint mode for a readable, non-anonymous working draft.
+% Switch to \usepackage{neurips_2025} for anonymous submission and
+% \usepackage[main, final]{neurips_2025} only after acceptance.
+\usepackage[preprint]{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=2pt,parsep=0pt,partopsep=0pt}
+
+\title{Adaptive Minimal Evidence Acquisition for Grounded VideoQA \\ \large Literature, Positioning, and Implementation Status}
+
+\author{
+  Ritesh Thawkar \\
+  Mohamed Bin Zayed University of Artificial Intelligence \\
+  \texttt{ritesh.thawkar@mbzuai.ac.ae}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document is a living research draft for the CV7502 project and a starting point for a potential conference submission.
+It records the current literature review, the observed research landscape, the refined novelty claim, and the implementation status of the working codebase.
+The central lesson from the literature is that multimodal VideoQA has already moved beyond simple fusion and generic retrieval; the active frontier is now grounded evidence selection, adaptive temporal retrieval, compute-aware context construction, and faithfulness of the retrieved evidence.
+In response, the project has shifted from a broad tri-modal routing idea toward adaptive minimal evidence acquisition: under a fixed evidence budget, the system should retrieve only the smallest subtitle-frame-segment evidence set needed to answer correctly and faithfully.
+\end{abstract}
+
+\section{Project Framing}
+The current project studies Video Question Answering (VideoQA) with evidence drawn from subtitles, frames, and short temporal segments under a fixed retrieval budget.
+The original proposal argued that question-conditioned routing of the evidence budget across modalities could improve answer accuracy and reduce evidence mismatch relative to single-modality or fixed-split retrieval.
+
+The literature review below suggests that this framing is directionally correct, but that modality routing alone is no longer sufficient as a publishable claim.
+Recent work already studies question-guided temporal selection, long-video retrieval, grounded answer prediction, and modality-aware retrieval.
+To produce a strong research contribution, the project will likely need to focus on \emph{budget-aware}, \emph{faithful}, and \emph{robust} evidence allocation rather than only on multi-modal retrieval.
+
+\section{Objective and Intended Contribution}
+The working objective is now:
+\begin{quote}
+\emph{Formulate grounded VideoQA as adaptive multimodal evidence acquisition, where the system sequentially chooses whether to acquire subtitle, frame, or segment evidence, or to stop, under a fixed evidence budget.}
+\end{quote}
+
+The intended contribution is not simply to use multiple modalities.
+That contribution is already well represented in the literature.
+The project instead aims to contribute the following combination:
+\begin{itemize}
+  \item \textbf{Budget-aware acquisition:} learn how much evidence to acquire and when to stop under a hard budget.
+  \item \textbf{Minimal sufficient evidence:} build and imitate evidence sets that are as small as possible while preserving correctness.
+  \item \textbf{Faithfulness constraints:} require the selected evidence to remain grounded in the correct temporal region and, when possible, retain answer support.
+  \item \textbf{Reproducible evaluation:} report accuracy, cost, sufficiency, comprehensiveness, and temporal grounding together rather than accuracy alone.
+\end{itemize}
+
+\section{Literature Review}
+\subsection{Foundational VideoQA benchmarks and supervised multimodal reasoning}
+Early work established the task formulations and benchmark culture for VideoQA.
+\citet{tapaswi2016movieqa} introduced MovieQA as a story-understanding benchmark for movies, while \citet{jang2017tgifqa} proposed TGIF-QA to push beyond static-image reasoning toward spatio-temporal reasoning in GIF videos.
+The field consolidated around multi-modal reasoning with \citet{lei2018tvqa}, who introduced TVQA with aligned subtitles and localized temporal reasoning.
+TVQA was particularly influential because it made subtitle evidence, question-conditioned localization, and multiple-choice answering part of a single benchmark.
+
+Subsequent work pushed from answer prediction toward grounded evidence prediction.
+\citet{lei2019tvqaplus} extended TVQA into TVQA+, adding spatio-temporal grounding annotations and proposing STAGE for joint answering and grounding.
+Architectures such as HCRN \citep{le2020hcrn} and other hierarchical video-language fusion models showed that stronger temporal compositional structure could improve reasoning, but these systems still typically consumed dense video context rather than explicitly managing an evidence budget.
+Datasets such as NExT-QA \citep{xiao2021nextqa} further exposed the limits of shallow scene-description methods by emphasizing temporal and causal reasoning.
+
+The main takeaway from this first phase of the literature is that VideoQA is not just a classification problem.
+High performance requires identifying which time span, which visual content, and which textual context actually support the answer.
+This observation directly motivates retrieval-style formulations.
+
+\subsection{Large-scale pretraining and frozen-language-model approaches}
+The second phase of the literature shifted from dataset-specific fusion architectures to large-scale pretraining and frozen language models.
+Representation learning advances such as CLIP \citep{radford2021clip}, VideoCLIP \citep{xu2021videoclip}, and CLIP4Clip \citep{luo2021clip4clip} made dense cross-modal retrieval practical for text-image and text-video matching.
+These models became the backbone for many later retrieval and grounding pipelines.
+
+On the QA side, \citet{yang2021justask} showed that large-scale automatically generated supervision from narrated videos can support strong VideoQA performance.
+This line of work reduced the dependence on manually annotated QA pairs and made zero-shot and few-shot VideoQA more realistic.
+\citet{yang2022frozenbilm} then showed that frozen bidirectional language models can be adapted for zero-shot VideoQA using lightweight trainable modules, providing a stronger alternative to heavier autoregressive approaches.
+\citet{pan2023r2a} took this further with a retrieval-based design that converts video understanding into language-space reasoning by retrieving semantically similar text from an external corpus before answer prediction.
+
+These methods revealed an important pattern: strong VideoQA performance can come from combining pretrained visual encoders, language-space alignment, and lightweight answer modules, without expensive end-to-end video training.
+However, they also expose a limitation relevant to the current project.
+Much of the ``retrieval'' in this phase is effectively text-side support retrieval or language-space prompting, not fine-grained evidence allocation across subtitles, frames, and temporal segments under a shared budget.
+
+\subsection{Retrieval augmentation, long-video memory, and evidence compression}
+Recent work has expanded retrieval from a supportive component into the core mechanism for video understanding, especially for long videos where full-context processing is too expensive.
+\citet{luo2024videorag} propose Video-RAG for visually aligned retrieval-augmented long-video comprehension, making explicit the need to retrieve only the most relevant evidence rather than process entire videos.
+Related systems such as VRAG \citep{gia2025vrag} and VideoRAG over video corpora \citep{jeong2025videorag} further push retrieval-augmented reasoning toward long-form VideoQA and corpus-scale retrieval settings.
+
+This theme overlaps with long-video memory work.
+Although not always cast as retrieval, the central problem is similar: a system must compress, select, or revisit only the relevant pieces of a long and redundant video stream.
+The modern question is therefore not whether some retrieval mechanism helps, but what information should be retrieved, at what granularity, and under what compute budget.
+
+For the current project, this literature matters because it strengthens the case for a fixed evidence-budget setup.
+If the project compares methods under equal budgets, it can make a sharper claim about \emph{efficiency of evidence selection}, not just raw accuracy.
+That framing is stronger both scientifically and for potential publication.
+
+\subsection{Grounded and trustworthy VideoQA}
+Another major recent direction is faithfulness and grounding.
+\citet{xiao2023trust} show that strong VideoQA models may answer correctly while failing to ground their predictions in the relevant video evidence.
+Their NExT-GQA benchmark and analysis are important because they separate answer correctness from answer trustworthiness.
+This is directly relevant to any retrieval-augmented system: retrieving evidence is only useful if the answer is actually based on that evidence.
+
+Grounded VideoQA work suggests that future systems should not only output an answer but also expose the supporting temporal span, frames, or subtitle spans.
+For the present project, this creates a natural opportunity.
+If the model returns cited subtitle chunks, timestamps, and frames, then routing can be evaluated not just as a hidden controller but as a mechanism for \emph{faithful evidence construction}.
+This is likely a stronger contribution than a pure accuracy improvement.
+
+\subsection{Question-guided temporal retrieval and modality-aware routing}
+The most relevant recent literature is the work that directly adapts retrieval to the question.
+\citet{amoroso2024pqr} propose question-guided temporal queries for VideoQA, showing that temporal evidence should be selected conditionally on the input question rather than extracted with fixed pooling.
+This narrows the novelty space for any project whose main claim is only ``question-guided evidence selection.''
+
+The closest line to the current proposal is modality-aware retrieval.
+\citet{yeo2025universalrag} argue that retrieval over multiple corpora with diverse modalities and granularities suffers from modality gaps in a unified retrieval space, motivating modality- and granularity-aware retrieval.
+\citet{delarosa2025modaroute} push this further with smart routing for multimodal video retrieval, where the system decides which modalities to search.
+Together, these papers imply that a publishable contribution can no longer stop at saying that different questions prefer different modalities.
+That point is already established.
+
+The remaining open problem is finer and more operational: how should a system allocate a limited evidence budget across modalities and granularities so that retrieval is accurate, efficient, and faithful?
+This budget-allocation perspective is not yet cleanly resolved in the current literature, especially in benchmark settings where subtitle and visual evidence compete.
+
+\section{Synthesis of the Current Landscape}
+The literature supports five clear conclusions.
+
+\begin{itemize}
+  \item VideoQA has evolved from late-fusion answer classification to evidence-centric reasoning with temporal grounding and explicit context selection.
+  \item Pretrained vision-language encoders and frozen language models have made retrieval-based and lightweight-answering pipelines highly competitive.
+  \item Long-video understanding has turned retrieval, memory compression, and context budgeting into central system design problems.
+  \item Current models often remain weak in faithfulness: correct answers do not necessarily imply correct evidence.
+  \item Modality-aware and question-conditioned retrieval already exist, so novelty now depends on how evidence is allocated, justified, and evaluated.
+\end{itemize}
+
+This means that the project's baseline idea remains viable, but it needs sharper positioning.
+``Tri-modal routing'' by itself is not sufficiently new in 2026.
+A stronger contribution would be one of the following:
+
+\begin{itemize}
+  \item \textbf{Budget-aware routing:} learn both \emph{which} modality matters and \emph{how much} budget each modality should receive under a hard evidence cap.
+  \item \textbf{Faithful routed VideoQA:} require cited evidence and evaluate whether the routed evidence genuinely supports the predicted answer.
+  \item \textbf{Robust routing:} show that modality routing adapts under noisy subtitles, missing modalities, or lower evidence budgets.
+  \item \textbf{Hierarchical routing:} route across modality first and temporal granularity second, instead of using a flat top-$K$ retrieval rule.
+\end{itemize}
+
+\section{Working Research Position}
+Based on the current survey, the strongest working direction is:
+\begin{quote}
+\emph{Study grounded VideoQA as a model-relative minimal-evidence problem: under a fixed budget, compare how weak and stronger answerers differ in the smallest subtitle-frame-segment evidence sets they need, and learn acquisition policies that are evaluated on accuracy, faithfulness, compactness, and transfer.}
+\end{quote}
+
+This positioning is more defensible than a generic tri-modal RAG claim because it ties the contribution to a concrete unresolved question: whether ``minimal sufficient evidence'' is stable across answerers or is itself model-dependent.
+It also aligns well with course expectations around novelty, thorough experimentation, and critical analysis.
+
+\section{Current Implementation Status}
+The codebase now supports the main research pipeline at a baseline level.
+Implemented components include:
+\begin{itemize}
+  \item normalization for TVQA and TVQA+ into a shared JSONL schema;
+  \item normalization for NExT-GQA from official CSV annotations, grounding JSON, frame-time JSON, and video-id maps;
+  \item candidate-pool construction for subtitle chunks, frame timestamps, and temporal segments;
+  \item visual evidence materialization from source videos using \texttt{ffmpeg};
+  \item CLIP-based feature extraction for frames and segment-level pooled embeddings;
+  \item retrieval baselines including lexical, BM25, and hybrid subtitle-plus-CLIP retrieval;
+  \item a fixed-budget linear answerer baseline and a stronger frozen multimodal answerer backend using CLIP text embeddings plus the visual feature store;
+  \item a constrained greedy oracle for minimal evidence subsets, with explicit modes for prediction-preserving, correctness-only, correctness-plus-sufficiency, and correctness-plus-sufficiency-plus-grounding comparisons;
+  \item oracle-trace export for imitation learning;
+  \item a trainable sequential policy that predicts \texttt{acquire\_subtitle}, \texttt{acquire\_frame}, \texttt{acquire\_segment}, or \texttt{stop};
+  \item a model-relative study runner that compares minimal-evidence subsets across two answerers and records evidence overlap, modality agreement, temporal agreement, and transfer gaps;
+  \item an HPC-oriented multi-GPU run script for the current end-to-end pipeline.
+\end{itemize}
+
+This implementation status is important for project management.
+The repository is no longer only a conceptual proposal or literature review; it is now a functioning experimental scaffold that supports end-to-end dry runs and baseline experiments.
+
+\section{Validation Status}
+The current repository has been validated in three ways.
+\begin{itemize}
+  \item \textbf{Unit and integration testing:} the test suite covers preprocessing, retrieval, visual materialization, answerer training, oracle logic, and policy learning.
+  \item \textbf{Local end-to-end dry run:} a workspace-local dry run was completed from raw TVQA-shaped annotations and synthetic videos through feature extraction, retrieval, answerer training, oracle export, policy training, and sequential evaluation.
+  \item \textbf{Bug discovery before scaling:} the dry run exposed a real compatibility bug in CLIP feature extraction caused by the current \texttt{transformers} output type on the local environment; this was fixed before moving to HPC.
+\end{itemize}
+
+This is exactly the kind of validation the project should complete before large-scale experiments.
+It reduces the risk of wasting GPU time on infrastructure errors and makes the transition to an HPC environment more defensible.
+
+\section{Current Limitations}
+Although the pipeline is now functional, the current implementation should still be understood as a research baseline rather than the final paper system.
+The main limitations are:
+\begin{itemize}
+  \item the strongest implemented answerer is now a frozen multimodal scorer, but the repository still lacks a genuinely strong fine-tuned VLM-style answerer;
+  \item the policy currently decides the next modality to acquire, but does not yet learn richer within-modality reranking or uncertainty-aware exploration;
+  \item the local dry run used synthetic data for plumbing validation, so its metrics are not scientifically meaningful;
+  \item the final claims still require experiments on real TVQA / TVQA+ data, multi-seed evaluation, robustness tests, and ablations;
+  \item NExT-GQA preprocessing support is now implemented, but the benchmark still needs full end-to-end runs and evaluation support before it can substantively support the paper claims.
+\end{itemize}
+
+\section{Immediate Next Steps}
+This document now captures the literature, the refined gap analysis, and the implementation status.
+The next research milestones should be:
+
+\begin{itemize}
+  \item run the full pipeline on real TVQA / TVQA+ train and validation subsets;
+  \item benchmark hybrid retrieval against sparse baselines under matched budgets;
+  \item add a second, clearly stronger answerer tier beyond the current frozen multimodal baseline;
+  \item run the new NExT-GQA preprocessing path on real data and validate the benchmark end to end;
+  \item add ablations for oracle modes, stopping behavior, and policy action accuracy;
+  \item add robustness experiments for noisy subtitles, missing modalities, and tighter budgets;
+  \item convert the repository outputs into paper-ready tables, figures, and qualitative case studies, including transfer and evidence-overlap analysis.
+\end{itemize}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

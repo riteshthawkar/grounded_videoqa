@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaptive-evidence-vqa"
+version = "0.1.0"
+description = "Research codebase for adaptive minimal evidence acquisition in grounded VideoQA."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Ritesh Thawkar" }
+]
+dependencies = [
+  "numpy>=1.26",
+  "PyYAML>=6.0"
+]
+
+[project.optional-dependencies]
+vision = [
+  "torch>=2.2",
+  "transformers>=4.40",
+  "Pillow>=10.0"
+]
+train = [
+  "torch>=2.2",
+  "transformers>=4.40",
+  "faiss-cpu>=1.8",
+  "decord>=0.6",
+  "scikit-learn>=1.5"
+]
+dev = [
+  "pytest>=8.0"
+]
+
+[project.scripts]
+adaptive-evidence-vqa = "adaptive_evidence_vqa.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

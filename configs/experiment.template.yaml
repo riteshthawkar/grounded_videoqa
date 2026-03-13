@@ -1,0 +1,63 @@
+project:
+  name: adaptive-minimal-evidence-videoqa
+  seed: 13
+
+dataset:
+  name: tvqa_plus
+  root: data/tvqa_plus
+  split: train
+  subtitle_chunk_seconds: 6
+  subtitle_gap_seconds: 1.5
+  segment_seconds: 4
+  segment_stride_seconds: 2
+  frame_stride_seconds: 2
+
+retrieval:
+  name: bm25
+  candidate_pool_size_per_modality: 16
+  fixed_allocation:
+    subtitle: 2
+    frame: 2
+    segment: 2
+  budget:
+    max_items: 6
+    subtitle_cost: 1.0
+    frame_cost: 1.0
+    segment_cost: 1.5
+
+answerer:
+  name: trainable_linear
+  confidence_threshold: 0.65
+  text_feature_dim: 4096
+  epochs: 20
+  batch_size: 32
+  learning_rate: 0.2
+  weight_decay: 0.0001
+  patience: 4
+  seed: 13
+
+oracle:
+  method: backward_elimination
+  max_seed_items: 6
+  min_sufficiency: 0.8
+  min_temporal_iou: 0.1
+  require_gold_answer: true
+
+policy:
+  name: trainable_linear_policy
+  max_items: 6
+  text_feature_dim: 4096
+  epochs: 20
+  batch_size: 32
+  learning_rate: 0.2
+  weight_decay: 0.0001
+  patience: 4
+  seed: 13
+
+evaluation:
+  metrics:
+    - accuracy
+    - evidence_cost
+    - temporal_iou
+    - sufficiency
+    - comprehensiveness
