@@ -7,6 +7,7 @@ from pathlib import Path
 
 VIDEO_EXTENSIONS = (".mp4", ".mkv", ".avi", ".mov", ".webm")
 SAFE_ID_RE = re.compile(r"[^A-Za-z0-9._-]+")
+H264_SAFE_PAD_FILTER = "pad=ceil(iw/2)*2:ceil(ih/2)*2"
 
 
 def sanitize_identifier(value: str) -> str:
@@ -158,6 +159,8 @@ def extract_segment_clip(
         "-t",
         f"{duration:.3f}",
         "-an",
+        "-vf",
+        H264_SAFE_PAD_FILTER,
         "-c:v",
         "libx264",
         "-preset",
