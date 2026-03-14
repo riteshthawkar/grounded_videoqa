@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from adaptive_evidence_vqa.data.visual import build_video_index, materialize_visual_evidence, resolve_video_path
+from adaptive_evidence_vqa.data import visual as visual_module
+from adaptive_evidence_vqa.data.visual import (
+    build_video_index,
+    extract_frame_image,
+    materialize_visual_evidence,
+    resolve_video_path,
+)
 
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is required for visual tests")
@@ -90,3 +96,33 @@ def test_materialize_visual_evidence_handles_odd_sized_video_segments(tmp_path: 
     )
 
     assert Path(enriched["segments"][0]["source_path"]).is_file()
+
+
+def test_extract_frame_image_retries_when_ffmpeg_writes_no_frame(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    video_path = tmp_path / "video.mp4"
+    video_path.write_bytes(b"video")
+    output_path = tmp_path / "frames" / "frame.jpg"
+
+    attempts: list[list[str]] = []
+
+    def fake_run(command: list[str], check: bool) -> None:
+        attempts.append(command)
+        if len(attempts) == 1:
+            return
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"frame")
+
+    monkeypatch.setattr(visual_module.subprocess, "run", fake_run)
+    monkeypatch.setattr(visual_module, "probe_video_duration", lambda _path: 14.0)
+
+    extracted = extract_frame_image(
+        video_path=video_path,
+        time_point=14.2,
+        output_path=output_path,
+        video_duration=14.0,
+        overwrite=True,
+    )
+
+    assert extracted == output_path
+    assert output_path.is_file()
+    assert len(attempts) >= 2

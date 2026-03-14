@@ -105,6 +105,7 @@ def extract_frame_image(
     time_point: float,
     output_path: str | Path,
     ffmpeg_bin: str = "ffmpeg",
+    video_duration: float | None = None,
     overwrite: bool = False,
 ) -> Path:
     ensure_ffmpeg(ffmpeg_bin)
@@ -113,29 +114,73 @@ def extract_frame_image(
     if output.exists() and not overwrite:
         return output
 
-    candidate_times = [max(0.0, float(time_point))]
-    if time_point > 0.25:
-        candidate_times.append(max(0.0, float(time_point) - 0.25))
+    resolved_duration = video_duration
+    if resolved_duration is None:
+        try:
+            resolved_duration = probe_video_duration(video_path)
+        except Exception:
+            resolved_duration = None
+
+    candidate_times: list[float] = []
+
+    def add_candidate(value: float) -> None:
+        candidate = max(0.0, float(value))
+        if resolved_duration is not None:
+            safe_upper_bound = max(0.0, float(resolved_duration) - 0.1)
+            candidate = min(candidate, safe_upper_bound)
+        if all(abs(candidate - existing) > 1e-3 for existing in candidate_times):
+            candidate_times.append(candidate)
+
+    add_candidate(time_point)
+    add_candidate(time_point - 0.25)
+    add_candidate(time_point - 0.5)
+    if resolved_duration is not None:
+        add_candidate(resolved_duration - 0.25)
+        add_candidate(resolved_duration - 0.5)
+        add_candidate(resolved_duration - 1.0)
+    add_candidate(0.0)
 
     for candidate_time in candidate_times:
-        command = [
-            ffmpeg_bin,
-            "-loglevel",
-            "error",
-            "-y",
-            "-ss",
-            f"{candidate_time:.3f}",
-            "-i",
-            str(video_path),
-            "-frames:v",
-            "1",
-            "-q:v",
-            "2",
-            str(output),
-        ]
-        subprocess.run(command, check=True)
-        if output.exists() and output.stat().st_size > 0:
-            return output
+        for accurate_seek in (False, True):
+            if output.exists():
+                output.unlink()
+
+            if accurate_seek:
+                command = [
+                    ffmpeg_bin,
+                    "-loglevel",
+                    "error",
+                    "-y",
+                    "-i",
+                    str(video_path),
+                    "-ss",
+                    f"{candidate_time:.3f}",
+                    "-frames:v",
+                    "1",
+                    "-q:v",
+                    "2",
+                    str(output),
+                ]
+            else:
+                command = [
+                    ffmpeg_bin,
+                    "-loglevel",
+                    "error",
+                    "-y",
+                    "-ss",
+                    f"{candidate_time:.3f}",
+                    "-i",
+                    str(video_path),
+                    "-frames:v",
+                    "1",
+                    "-q:v",
+                    "2",
+                    str(output),
+                ]
+
+            subprocess.run(command, check=True)
+            if output.exists() and output.stat().st_size > 0:
+                return output
 
     raise FileNotFoundError(
         f"ffmpeg completed without writing a frame image for {video_path} at time {time_point:.3f}."
@@ -217,6 +262,7 @@ def materialize_visual_evidence(
 ) -> dict:
     enriched = deepcopy(record)
     video_source_path = str(video_path)
+    record_video_duration = enriched.get("metadata", {}).get("video_duration")
 
     for index, frame in enumerate(enriched.get("frames", [])):
         output_path = frame_artifact_path(
@@ -230,6 +276,7 @@ def materialize_visual_evidence(
             time_point=float(frame["time"]),
             output_path=output_path,
             ffmpeg_bin=ffmpeg_bin,
+            video_duration=float(record_video_duration) if record_video_duration is not None else None,
             overwrite=overwrite,
         )
         metadata = dict(frame.get("metadata", {}))
