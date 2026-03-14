@@ -38,6 +38,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-decay", type=float, default=1e-4, help="L2 regularization strength.")
     parser.add_argument("--patience", type=int, default=4, help="Early stopping patience.")
     parser.add_argument("--seed", type=int, default=13, help="Random seed.")
+    parser.add_argument(
+        "--min-items-before-stop",
+        type=int,
+        default=1,
+        help="Minimum number of acquired items required before the policy may emit stop.",
+    )
     return parser.parse_args()
 
 def parse_trace_record(record: dict) -> tuple[QuestionExample, tuple[EvidenceItem, ...], list[dict]]:
@@ -165,6 +171,7 @@ def main() -> None:
         weight_decay=args.weight_decay,
         patience=args.patience,
         seed=args.seed,
+        min_items_before_stop=args.min_items_before_stop,
     )
     model = TrainableSequentialPolicy.fit(
         train_states=train_states,
@@ -192,6 +199,7 @@ def main() -> None:
             "weight_decay": args.weight_decay,
             "patience": args.patience,
             "seed": args.seed,
+            "min_items_before_stop": args.min_items_before_stop,
         },
         "train_metrics": train_metrics,
         "validation_metrics": validation_metrics,

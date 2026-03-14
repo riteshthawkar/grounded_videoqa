@@ -4,6 +4,7 @@ from adaptive_evidence_vqa.models.policy import (
     PolicyTrainingState,
     SequentialPolicyConfig,
     TrainableSequentialPolicy,
+    action_mask,
 )
 from adaptive_evidence_vqa.schemas import (
     AcquisitionTrace,
@@ -222,3 +223,104 @@ def test_parse_trace_record_preserves_visual_metadata() -> None:
     assert seed_evidence[0].source_path == "/tmp/frame-1.jpg"
     assert seed_evidence[0].metadata["visual_feature_path"] == "/tmp/features.npz"
     assert trace_steps[0]["action"] == "acquire_frame"
+
+
+def test_action_mask_blocks_stop_until_minimum_items_are_acquired() -> None:
+    frame_item = EvidenceItem(
+        evidence_id="frame-1",
+        modality=Modality.FRAME,
+        text="A blue shirt is visible.",
+        start_time=1.5,
+        end_time=1.5,
+        retrieval_score=2.0,
+    )
+
+    blocked_mask = action_mask(
+        {"subtitle": (), "frame": (frame_item,), "segment": ()},
+        acquired_count=0,
+        min_items_before_stop=1,
+    )
+    allowed_mask = action_mask(
+        {"subtitle": (), "frame": (frame_item,), "segment": ()},
+        acquired_count=1,
+        min_items_before_stop=1,
+    )
+
+    assert blocked_mask.sum() == 1.0
+    assert blocked_mask[-1] == 0.0
+    assert allowed_mask[-1] == 1.0
+
+
+def test_trainable_policy_filters_invalid_stop_only_states() -> None:
+    frame_item = EvidenceItem(
+        evidence_id="frame-1",
+        modality=Modality.FRAME,
+        text="A blue shirt is visible.",
+        start_time=1.5,
+        end_time=1.5,
+        retrieval_score=2.0,
+    )
+    example = make_example(
+        "ex-stop-filter",
+        "What color is the shirt?",
+        ("The shirt is blue.", "The shirt is red."),
+        subtitles=(),
+        frames=(frame_item,),
+    )
+
+    train_states = [
+        PolicyTrainingState(
+            example=example,
+            acquired=(),
+            remaining_subtitles=(),
+            remaining_frames=example.frames,
+            remaining_segments=(),
+            gold_action="stop",
+            step_index=0,
+            max_steps=2,
+        ),
+        PolicyTrainingState(
+            example=example,
+            acquired=(),
+            remaining_subtitles=(),
+            remaining_frames=example.frames,
+            remaining_segments=(),
+            gold_action="acquire_frame",
+            step_index=0,
+            max_steps=2,
+        ),
+        PolicyTrainingState(
+            example=example,
+            acquired=(frame_item,),
+            remaining_subtitles=(),
+            remaining_frames=(),
+            remaining_segments=(),
+            gold_action="stop",
+            step_index=1,
+            max_steps=2,
+        ),
+    ]
+
+    model = TrainableSequentialPolicy.fit(
+        train_states=train_states,
+        validation_states=None,
+        answerer=StubAnswerer(),
+        config=SequentialPolicyConfig(
+            text_feature_dim=256,
+            epochs=10,
+            batch_size=2,
+            learning_rate=0.5,
+            weight_decay=0.0,
+            patience=5,
+            seed=3,
+            min_items_before_stop=1,
+        ),
+    )
+
+    trace = model.run(
+        example,
+        candidate_pool={"subtitle": (), "frame": example.frames, "segment": ()},
+        max_items=2,
+    )
+
+    assert trace.steps[0].action == "acquire_frame"

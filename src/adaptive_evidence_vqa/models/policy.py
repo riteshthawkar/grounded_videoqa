@@ -38,17 +38,33 @@ ACTION_TO_MODALITY = {
 MODALITY_TO_ACTION = {modality: action for action, modality in ACTION_TO_MODALITY.items()}
 
 
-def available_actions(remaining_by_modality: dict[str, tuple[EvidenceItem, ...]]) -> tuple[str, ...]:
-    actions = ["stop"]
+def available_actions(
+    remaining_by_modality: dict[str, tuple[EvidenceItem, ...]],
+    *,
+    acquired_count: int = 0,
+    min_items_before_stop: int = 0,
+) -> tuple[str, ...]:
+    actions: list[str] = []
     for modality in ("subtitle", "frame", "segment"):
         if remaining_by_modality.get(modality):
             actions.append(MODALITY_TO_ACTION[modality])
+    if acquired_count >= min_items_before_stop or not actions:
+        actions.append("stop")
     return tuple(actions)
 
 
-def action_mask(remaining_by_modality: dict[str, tuple[EvidenceItem, ...]]) -> np.ndarray:
+def action_mask(
+    remaining_by_modality: dict[str, tuple[EvidenceItem, ...]],
+    *,
+    acquired_count: int = 0,
+    min_items_before_stop: int = 0,
+) -> np.ndarray:
     mask = np.zeros(len(POLICY_ACTIONS), dtype=np.float32)
-    for action in available_actions(remaining_by_modality):
+    for action in available_actions(
+        remaining_by_modality,
+        acquired_count=acquired_count,
+        min_items_before_stop=min_items_before_stop,
+    ):
         mask[ACTION_TO_INDEX[action]] = 1.0
     return mask
 
@@ -93,6 +109,7 @@ class SequentialPolicyConfig:
     weight_decay: float = 1e-4
     patience: int = 4
     seed: int = 13
+    min_items_before_stop: int = 1
 
 
 @dataclass(slots=True)
@@ -207,9 +224,15 @@ class SequentialPolicy(Protocol):
 
 
 class KeywordSequentialPolicy:
-    def __init__(self, answerer: Answerer, stop_confidence: float = 0.80) -> None:
+    def __init__(
+        self,
+        answerer: Answerer,
+        stop_confidence: float = 0.80,
+        min_items_before_stop: int = 1,
+    ) -> None:
         self.answerer = answerer
         self.stop_confidence = stop_confidence
+        self.min_items_before_stop = min_items_before_stop
 
     def preferred_modalities(self, question: str) -> list[str]:
         lowered = question.lower()
@@ -233,7 +256,10 @@ class KeywordSequentialPolicy:
 
         for step_index in range(max_items):
             prediction = self.answerer.predict(example, tuple(acquired))
-            if prediction.confidence >= self.stop_confidence and acquired:
+            if (
+                prediction.confidence >= self.stop_confidence
+                and len(acquired) >= self.min_items_before_stop
+            ):
                 steps.append(
                     AcquisitionStep(
                         step_index=step_index,
@@ -344,7 +370,11 @@ class TrainableSequentialPolicy:
             current_prediction=current_prediction,
         )
         logits = features @ self.weights
-        mask = action_mask(remaining_by_modality)
+        mask = action_mask(
+            remaining_by_modality,
+            acquired_count=len(acquired),
+            min_items_before_stop=self.config.min_items_before_stop,
+        )
         probabilities = _masked_softmax(logits, mask)
         action_index = int(np.argmax(probabilities)) if probabilities.size else ACTION_TO_INDEX["stop"]
         return INDEX_TO_ACTION[action_index], {
@@ -480,11 +510,13 @@ class TrainableSequentialPolicy:
             train_states,
             feature_extractor=feature_extractor,
             answerer=answerer,
+            config=resolved_config,
         )
         validation_features, validation_labels, validation_masks = cls._prepare_dataset(
             validation_states or [],
             feature_extractor=feature_extractor,
             answerer=answerer,
+            config=resolved_config,
         )
 
         rng = np.random.default_rng(resolved_config.seed)
@@ -555,6 +587,7 @@ class TrainableSequentialPolicy:
         states: list[PolicyTrainingState],
         feature_extractor: HashedPolicyFeatureExtractor,
         answerer: Answerer,
+        config: SequentialPolicyConfig,
     ) -> tuple[list[np.ndarray], list[int], list[np.ndarray]]:
         features: list[np.ndarray] = []
         labels: list[int] = []
@@ -565,9 +598,15 @@ class TrainableSequentialPolicy:
                 raise ValueError(f"Unsupported policy action: {state.gold_action}")
 
             remaining_by_modality = state.remaining_by_modality()
-            mask = action_mask(remaining_by_modality)
+            mask = action_mask(
+                remaining_by_modality,
+                acquired_count=len(state.acquired),
+                min_items_before_stop=config.min_items_before_stop,
+            )
             label = ACTION_TO_INDEX[state.gold_action]
             if mask[label] == 0:
+                if state.gold_action == "stop":
+                    continue
                 raise ValueError(
                     f"Gold action `{state.gold_action}` is not valid for step {state.step_index} "
                     f"of example {state.example.example_id}."
@@ -618,9 +657,11 @@ def build_policy(
     name: str,
     answerer: Answerer,
     model_dir: str | None = None,
+    *,
+    min_items_before_stop: int = 1,
 ) -> SequentialPolicy:
     if name == "keyword":
-        return KeywordSequentialPolicy(answerer)
+        return KeywordSequentialPolicy(answerer, min_items_before_stop=min_items_before_stop)
     if name == "linear":
         if not model_dir:
             raise ValueError("A model directory is required for the trainable sequential policy.")

@@ -41,6 +41,7 @@ class AnswererConfig:
 class PolicyConfig:
     name: str = "trainable_linear_policy"
     max_items: int = 6
+    min_items_before_stop: int = 1
     text_feature_dim: int = 4096
     epochs: int = 20
     batch_size: int = 32

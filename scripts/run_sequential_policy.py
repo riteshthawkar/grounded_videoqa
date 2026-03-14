@@ -44,6 +44,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--policy-model-dir", help="Model directory for the trainable sequential policy.")
     parser.add_argument("--max-items", type=int, default=6, help="Maximum number of acquisitions before forced stop.")
     parser.add_argument(
+        "--min-items-before-stop",
+        type=int,
+        default=1,
+        help="Minimum number of acquired items required before a keyword policy may emit stop.",
+    )
+    parser.add_argument(
         "--retriever",
         choices=("lexical", "bm25", "hybrid_clip"),
         default="bm25",
@@ -146,7 +152,12 @@ def main() -> None:
         model_name=args.answerer_model_name,
         device=args.answerer_device,
     )
-    policy = build_policy(args.policy, answerer=answerer, model_dir=args.policy_model_dir)
+    policy = build_policy(
+        args.policy,
+        answerer=answerer,
+        model_dir=args.policy_model_dir,
+        min_items_before_stop=args.min_items_before_stop,
+    )
     allocation = RetrievalAllocation(
         subtitle=args.subtitle_k,
         frame=args.frame_k,
@@ -186,6 +197,7 @@ def main() -> None:
         "visual_model_name": args.visual_model_name if args.retriever == "hybrid_clip" else None,
         "allocation": allocation.to_dict(),
         "max_items": args.max_items,
+        "min_items_before_stop": args.min_items_before_stop,
         "metrics": {
             "accuracy": average([result["correct"] for result in results if "correct" in result]),
             "selected_evidence_cost": average([result["selected_evidence_cost"] for result in results]),
