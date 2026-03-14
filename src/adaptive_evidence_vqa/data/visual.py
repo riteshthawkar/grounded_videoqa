@@ -113,23 +113,33 @@ def extract_frame_image(
     if output.exists() and not overwrite:
         return output
 
-    command = [
-        ffmpeg_bin,
-        "-loglevel",
-        "error",
-        "-y",
-        "-ss",
-        f"{time_point:.3f}",
-        "-i",
-        str(video_path),
-        "-frames:v",
-        "1",
-        "-q:v",
-        "2",
-        str(output),
-    ]
-    subprocess.run(command, check=True)
-    return output
+    candidate_times = [max(0.0, float(time_point))]
+    if time_point > 0.25:
+        candidate_times.append(max(0.0, float(time_point) - 0.25))
+
+    for candidate_time in candidate_times:
+        command = [
+            ffmpeg_bin,
+            "-loglevel",
+            "error",
+            "-y",
+            "-ss",
+            f"{candidate_time:.3f}",
+            "-i",
+            str(video_path),
+            "-frames:v",
+            "1",
+            "-q:v",
+            "2",
+            str(output),
+        ]
+        subprocess.run(command, check=True)
+        if output.exists() and output.stat().st_size > 0:
+            return output
+
+    raise FileNotFoundError(
+        f"ffmpeg completed without writing a frame image for {video_path} at time {time_point:.3f}."
+    )
 
 
 def extract_segment_clip(

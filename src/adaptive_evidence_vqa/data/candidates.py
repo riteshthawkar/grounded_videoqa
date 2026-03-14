@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+FRAME_EPSILON_SECONDS = 1e-3
+
 
 def infer_clip_span(record: dict) -> tuple[float, float]:
     subtitles = record.get("subtitles", [])
@@ -149,7 +151,7 @@ def generate_frame_candidates(
 
     frames = []
     cursor = clip_start
-    while cursor <= clip_end:
+    while cursor < max(clip_end - FRAME_EPSILON_SECONDS, clip_start + FRAME_EPSILON_SECONDS):
         frames.append(
             {
                 "text": nearest_subtitle_text(subtitles, cursor),

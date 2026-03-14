@@ -70,3 +70,27 @@ def test_build_candidate_record_uses_metadata_frame_timestamps_without_grounding
     assert candidate_record["segments"][0]["start"] == 0.5
     assert candidate_record["segments"][-1]["end"] == 88.0
     assert candidate_record["metadata"]["clip_span"] == [0.5, 88.0]
+
+
+def test_build_candidate_record_does_not_emit_exact_end_frame_from_duration_only_metadata() -> None:
+    record = {
+        "example_id": "nextgqa:duration-only:0",
+        "video_id": "0001/example",
+        "question": "What happens?",
+        "options": ["A", "B"],
+        "answer_index": 0,
+        "temporal_grounding": None,
+        "subtitles": [],
+        "frames": [],
+        "segments": [],
+        "metadata": {
+            "dataset": "nextgqa",
+            "video_duration": 90.0,
+            "clip_span": [0.0, 90.0],
+        },
+    }
+
+    candidate_record = build_candidate_record(record, frame_stride_seconds=2.0)
+
+    assert candidate_record["frames"]
+    assert candidate_record["frames"][-1]["time"] == 88.0
