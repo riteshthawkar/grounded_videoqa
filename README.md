@@ -75,6 +75,7 @@ What is implemented today:
 - A trainable sequential acquisition policy over `acquire_subtitle`, `acquire_frame`, `acquire_segment`, and `stop`.
 - A model-relative study runner that compares minimal-evidence subsets across two answerers and records subset overlap, modality agreement, temporal agreement, and transfer gaps.
 - A multi-GPU HPC-oriented orchestration script for the current end-to-end pipeline.
+- A focused NExT-GQA HPC runner that packages the validated single-GPU experiment flow into one script.
 
 What has already been validated:
 
@@ -222,6 +223,18 @@ python scripts/extract_clip_features.py \
   --input-path data/candidates/tvqa_train_visual.jsonl \
   --output-path data/candidates/tvqa_train_visual_features.jsonl \
   --feature-dir data/features/clip
+```
+
+Run the validated end-to-end NExT-GQA experiment flow on an HPC machine:
+
+```bash
+bash scripts/run_nextgqa_experiment.sh \
+  --data-root /path/to/nextgqa \
+  --video-root /path/to/nextgqa/videos \
+  --run-root /path/to/output/run \
+  --conda-prefix /path/to/conda-env \
+  --train-limit 500 \
+  --val-limit 200
 ```
 
 Run a fixed-allocation baseline on candidate pools:

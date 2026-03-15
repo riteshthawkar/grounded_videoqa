@@ -15,6 +15,7 @@ As the implementation matures, expected scripts are:
 - `run_sequential_policy.py`
 - `run_model_relative_study.py`
 - `run_multigpu_pipeline.sh`
+- `run_nextgqa_experiment.sh`
 - `run_ablation.py`
 
 The dataset normalization scripts now convert raw TVQA, TVQA+, and NExT-GQA annotations into
@@ -35,3 +36,7 @@ using the same retrieval allocation controls as trace export.
 The model-relative study runner compares oracle subsets across two answerers and records overlap, transfer, and grounding metrics.
 The multi-GPU bash runner orchestrates the current end-to-end experiment on HPC-style machines by parallelizing
 CLIP feature extraction and retrieval-heavy evaluation across available GPUs.
+The focused NExT-GQA bash runner orchestrates the validated single-GPU experiment flow used for larger-subset
+and full-run experiments on HPC machines: preprocessing, candidate generation, visual materialization,
+CLIP feature extraction, fixed-budget baseline, keyword baseline, oracle export, learned-policy training,
+and learned-policy evaluation.
