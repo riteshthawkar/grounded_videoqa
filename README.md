@@ -237,6 +237,15 @@ bash scripts/run_nextgqa_experiment.sh \
   --val-limit 200
 ```
 
+Aggregate multiple seeded runs into a paper-ready mean/std table:
+
+```bash
+python scripts/aggregate_run_summaries.py \
+  --run-roots runs/nextgqa_500_200_seed13 runs/nextgqa_500_200_seed21 runs/nextgqa_500_200_seed34 \
+  --output-json runs/nextgqa_500_200_aggregate.json \
+  --output-markdown runs/nextgqa_500_200_aggregate.md
+```
+
 Run a fixed-allocation baseline on candidate pools:
 
 ```bash

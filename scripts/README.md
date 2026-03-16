@@ -16,6 +16,7 @@ As the implementation matures, expected scripts are:
 - `run_model_relative_study.py`
 - `run_multigpu_pipeline.sh`
 - `run_nextgqa_experiment.sh`
+- `aggregate_run_summaries.py`
 - `run_ablation.py`
 
 The dataset normalization scripts now convert raw TVQA, TVQA+, and NExT-GQA annotations into
@@ -40,3 +41,5 @@ The focused NExT-GQA bash runner orchestrates the validated single-GPU experimen
 and full-run experiments on HPC machines: preprocessing, candidate generation, visual materialization,
 CLIP feature extraction, fixed-budget baseline, keyword baseline, oracle export, learned-policy training,
 and learned-policy evaluation.
+The summary aggregation script reads multiple run directories and prints a paper-ready mean/std table for
+selected summary files and metrics.
